@@ -1,0 +1,25 @@
+{
+    "id": "E9177BEC",
+    "path": "~/git/state_coal/state_coal.R",
+    "project_path": "state_coal.R",
+    "type": "r_source",
+    "hash": "1248588206",
+    "contents": "",
+    "dirty": false,
+    "created": 1594026809501.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "tempName": "Untitled1",
+        "cursorPosition": "179,2",
+        "scrollLine": "169"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1594371265,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1594371265963,
+    "read_only": false,
+    "read_only_alternatives": []
+}

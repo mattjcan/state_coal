@@ -1,0 +1,200 @@
+# PREAMBLE ---------------------------------------------------------------
+
+library(tidyverse)
+library(rgdal) 
+library(leaflet)
+library(knitr)
+library(xaringan)
+library(rmarkdown)
+library(gridExtra)
+library(widgetframe)
+library(kableExtra)
+library(ggthemes)
+library(zoo)
+library(readxl)
+library(lubridate)
+
+# PLOT FORMATS ----
+
+background <- c("#e5e5df")
+
+theme_mc <- theme_economist() + 
+  theme(legend.position="none") + 
+  theme(plot.title = element_text(size = 12, face = "bold")) +
+  theme(plot.subtitle = element_text(size = 10, vjust = -1, hjust = 0)) +
+  theme(axis.text = element_text(size = 10, vjust = 0.3, hjust = 0.5)) +
+  theme(axis.title.y = element_text(size = 10)) +
+  theme(axis.line.y = element_blank()) +
+  theme(axis.ticks.y = element_blank()) +
+  theme(plot.caption = element_text(hjust = 0, size = 9)) +
+  theme(plot.background = element_rect(fill = background)) +  
+  theme(panel.background = element_rect(fill = background)) +   
+  theme(panel.grid.major.y =  element_line(color = "#b3b3b3", size = 0.2))
+
+stroke_size <- 0.75
+
+line_color <- "#2166ac"
+
+
+# IMPORT ------------------------------------------------------------------
+
+d <- "C:/Users/matt/Dropbox/02. Briefing Notes/R/nsw_petrol/" # parent directory for the data
+
+p_2003 <- read_csv(paste0(d,"data/queensland-fuel-prices-march-2020.csv"), skip = 0)
+
+p_2002 <- read_csv(paste0(d,"data/queensland-fuel-prices-febuary-2020.csv"), skip = 0)
+
+p_2001 <- read_csv(paste0(d,"data/queensland-fuel-prices-january-2020.csv"), skip = 0)
+
+
+
+p <- bind_rows(p_2003, p_2002, p_2001)
+
+pc <- read_csv(paste0(d,"data/pc.csv"), skip = 5)
+
+
+# TIDY ---- 
+
+# TIDY ----
+
+p$TransactionDateutc <- as.Date(p$TransactionDateutc, "%d/%m/%Y %H:%M")
+
+p$month <- paste0("01-", month(p$TransactionDateutc, label = T, abbr = T),"-", year(p$TransactionDateutc))
+
+p$month <- as.Date(p$month, "%d-%b-%Y")
+
+p <- p %>% 
+  rename("Suburb" = "Site_Suburb",
+         "Postcode" = "Site_Post_Code",
+         "lat" = "Site_Latitude",
+         "lon" = "Site_Longitude",
+         "FuelCode" = "Fuel_Type",
+         "PriceUpdatedDate" = "TransactionDateutc")
+
+pc <- pc[2:3232,1:6]
+
+names(pc)[1] <- "Postcode"
+
+p <- inner_join(p, pc, by = "Postcode")
+
+p <- p %>% 
+  select(Site_Name, Sites_Address_Line_1, Suburb, Postcode, Site_Brand, FuelCode, PriceUpdatedDate, Price, month, RA_CODE_2011, RA_NAME_2011)
+
+lab_reg <- tibble(RA_NAME_2011 = c("Major Cities of Australia", "Inner Regional Australia", "Outer Regional Australia", "Remote Australia", "Very Remote Australia"), reg = c("Capital", "Regional", "Regional", "Regional", "Regional"))
+
+p <- inner_join(p, lab_reg, by = "RA_NAME_2011")
+
+p$RA_NAME_2011 <- recode(p$RA_NAME_2011, "Major Cities of Australia" = "Sydney",
+                         "Inner Regional Australia" = "Inner regional",
+                         "Outer Regional Australia" = "Outer regional",
+                         "Remote Australia" = "Remote",
+                         "Very Remote Australia" = "Very remote")
+
+
+# TRANSFORM ----
+
+p_day_suburb <- p %>% 
+  ungroup() %>% 
+  group_by(FuelCode, PriceUpdatedDate, Suburb) %>% 
+  summarise(mean_price = mean(Price, na.rm = T))
+
+p_day_ra <- p %>% 
+  group_by(FuelCode, PriceUpdatedDate, RA_NAME_2011, reg) %>% 
+  summarise(mean_price = mean(Price, na.rm = T))
+
+p_day <- p %>% 
+  group_by(FuelCode, PriceUpdatedDate, reg) %>% 
+  summarise(mean_price = mean(Price, na.rm = T))
+
+p_roll7 <- p_day %>% 
+  arrange(FuelCode, reg) %>% 
+  ungroup() %>% 
+  group_by(FuelCode, reg) %>% 
+  mutate(wk = rollmean(mean_price, 7, align = "right", fill = NA))
+
+
+p_roll7_ra <- p_day_ra %>% 
+  arrange(FuelCode, RA_NAME_2011, reg) %>% 
+  ungroup() %>% 
+  group_by(FuelCode, RA_NAME_2011, reg) %>% 
+  mutate(rollmean = rollmean(mean_price, 7, align = "right", fill = NA))
+
+
+p_mean <- p %>% 
+  group_by(FuelCode, reg) %>% 
+  summarise(mean_price = mean(Price, na.rm = T))
+
+p_mean_ra <- p %>% 
+  group_by(FuelCode, RA_NAME_2011) %>% 
+  summarise(mean_price = mean(Price, na.rm = T))
+
+p_mean_ra_t <- p_mean_ra %>% 
+  filter(FuelCode %in% c("DL", "E10", "LPG", "U91"))
+
+p_mean_ra_t <- spread(p_mean_ra_t, key = "FuelCode", value = "mean_price")
+
+p_mean_ra_t <- p_mean_ra_t[c(4,1,2,3,5), ]
+
+
+p_month_ra <- p %>% 
+  group_by(FuelCode, month, RA_NAME_2011, reg) %>% 
+  summarise(mean_price = mean(Price, na.rm = T))
+
+p_month <- p %>% 
+  group_by(FuelCode, month, reg) %>% 
+  summarise(mean_price = mean(Price, na.rm = T))
+
+p_day <- p_day %>% 
+  group_by(FuelCode, reg) %>% 
+  mutate(rollmean = rollmean(mean_price, 7, align = "right", fill = NA))
+
+p_day_ra <- p_day_ra %>% 
+  group_by(FuelCode, RA_NAME_2011, reg) %>% 
+  mutate(rollmean = rollmean(mean_price, 7, align = "right", fill = NA))
+
+# VISUALISE ----
+
+plot_day <- p_day %>% 
+  filter(FuelCode == "Unleaded") %>% 
+  ggplot(aes(x = PriceUpdatedDate, y = mean_price, color = reg)) + 
+  geom_line(size = stroke_size) +
+  theme_mc + 
+  labs(title = "U91 petrol prices", subtitle = "$ per litre", caption = "Source: NSW Fuel Check", x ="", y = "") +
+  theme(legend.position = "bottom", legend.text = element_text(size=9), legend.background = element_rect(fill = background), legend.key = element_rect(fill = background), legend.title = element_blank(), legend.key.size = unit(3.5, "mm")) +
+  scale_color_manual(values = c(Capital = "red", Regional = "dark green"))
+
+
+plot_roll7 <- p_roll7 %>% 
+  filter(FuelCode == "E10") %>% 
+  ggplot(aes(x = PriceUpdatedDate, y = wk, color = reg)) + 
+  geom_line(size = stroke_size) +
+  theme_mc + 
+  labs(title = "Average weekly E10 petrol prices in NSW", subtitle = "$ per litre, rolling 7 day average", caption = "Source: NSW Fuel Check", x ="", y = "") +
+  theme(legend.position = "bottom", legend.text = element_text(size=9), legend.background = element_rect(fill = background), legend.key = element_rect(fill = background), legend.title = element_blank(), legend.key.size = unit(3.5, "mm")) +
+  scale_color_manual(values = c(Capital = "red", Regional = "dark green")) +
+  annotate("text", x = as.Date("2019-01-01"), y = 165, label = paste0("Capital = $1.36/L, Regional = 1.38/L"), hjust = 0, size = 3) +
+  ylim(100, 175)
+
+plot_roll7_dl_ra <- p_roll7_ra %>% 
+  filter(FuelCode == "DL") %>% 
+  ggplot(aes(x = PriceUpdatedDate, y = wk, color = RA_NAME_2011)) + 
+  geom_line(size = stroke_size) +
+  theme_mc + 
+  labs(title = "Average weekly diesel petrol prices in NSW", subtitle = "$ per litre, rolling 7 day average", caption = "Source: NSW Fuel Check", x ="", y = "") +
+  theme(legend.position = "bottom", legend.text = element_text(size=9), legend.background = element_rect(fill = background), legend.key = element_rect(fill = background), legend.title = element_blank(), legend.key.size = unit(3.5, "mm")) +
+  ylim(100, 175)
+
+plot_roll7_dl <- p_roll7 %>% 
+  filter(FuelCode == "DL") %>% 
+  ggplot(aes(x = PriceUpdatedDate, y = wk, color = reg)) + 
+  geom_line(size = stroke_size) +
+  theme_mc + 
+  labs(title = "Average weekly Diesel petrol prices in NSW", subtitle = "$ per litre, rolling 7 day average", caption = "Source: NSW Fuel Check", x ="", y = "") +
+  theme(legend.position = "bottom", legend.text = element_text(size=9), legend.background = element_rect(fill = background), legend.key = element_rect(fill = background), legend.title = element_blank(), legend.key.size = unit(3.5, "mm")) +
+  scale_color_manual(values = c(Capital = "red", Regional = "dark green")) +
+  annotate("text", x = as.Date("2019-01-01"), y = 165, label = paste0("Capital = $1.43/L, Regional = 1.47/L"), hjust = 0, size = 3) +
+  ylim(100, 175)
+
+
+
+
