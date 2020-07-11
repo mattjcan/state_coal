@@ -1,0 +1,24 @@
+{
+    "id": "C3B1BF7D",
+    "path": "~/git/state_coal/data/sa_map_edit.R",
+    "project_path": "data/sa_map_edit.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1594456758845.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "cursorPosition": "298,98",
+        "scrollLine": "278"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1594421813,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1594421813,
+    "read_only": false,
+    "read_only_alternatives": []
+}

@@ -219,9 +219,9 @@ sa2_s_coal <- sa2_s_emp %>%
 
 # maps
 
+sa2_map_qld <- sa2_map_org[sa2_map_org$STE_NAME16 %in% "Queensland", ]
 
-
-sa2_map_coal <- sp::merge(sa2_map_org, sa2_s_emp_100, by = "SA2_5DIG16", all=F)
+sa2_map_coal <- sp::merge(sa2_map_qld, sa2_s_emp_100, by = "SA2_5DIG16", all=F)
 
 pal_t_s <- colorBin(c("#990000", "#ff0000", "#ff9999", "white", "#ccccff", "#0000ff", "#0000b3"), domain = sa2_map_s_100$swing, bins = c(-20, -10, -5, 0, 5, 10, 25))
 

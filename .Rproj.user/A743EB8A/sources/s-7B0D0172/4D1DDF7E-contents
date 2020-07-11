@@ -1,0 +1,421 @@
+# PREAMBLE ---------------------------------------------------------------
+
+library(tidyverse)
+library(knitr)
+library(xaringan)
+library(rmarkdown)
+library(ggthemes)
+library(zoo)
+library(readxl)
+library(lubridate)
+library(scales)
+library(easynls)
+library(gridExtra)
+library(readxl)
+library(survey)
+library(vcd)
+library(XML)
+library(xml2)
+library(sp)
+library(rgdal)
+library(leaflet)
+library(mapview)
+library(widgetframe)
+
+
+# PLOT FORMATS ----
+
+background <- c("#e5e5df")
+
+theme_mc <- theme_economist() + 
+  theme(legend.position="none") + 
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  theme(axis.text = element_text(size = 10, vjust = 0.3, hjust = 0.5)) +
+  theme(axis.title.y = element_text(size = 10)) +
+  theme(axis.line = element_blank()) +
+  theme(axis.ticks.y = element_blank()) +
+  theme(plot.caption = element_text(hjust = 0, size = 9)) +
+  theme(plot.background = element_rect(fill = background)) +  
+  theme(panel.background = element_rect(fill = background)) +   
+  theme(panel.grid.major.y =  element_line(color = "#b3b3b3", size = 0.2))
+
+stroke_size <- 0.75
+
+line_color <- "#2166ac"
+
+# IMPORT ------------------------------------------------------------------
+
+d <- "C:/Users/matt/Documents/git/em/" # parent directory for the data
+
+em_pp <- read_csv(paste0(d, "data/HouseStateFirstPrefsByPollingPlaceDownload-25820-NSW.csv"), skip = 1)
+
+# import polling booth locations 
+
+pb19 <- read_csv(paste0(d,"data/GeneralPollingPlacesDownload-24310.csv"), skip = 1)
+
+fed_elec <- readOGR(paste0(d,"data/COM_ELB_region.shx"))
+
+
+# TIDY ---- 
+
+em_pp <- em_pp %>% 
+  rename(pp_id = PollingPlaceID,
+         pp = PollingPlace,
+         party = PartyAb,
+         party_nm = PartyNm,
+         v = OrdinaryVotes,
+         s = Swing) %>% 
+  select(pp_id, pp, party, party_nm, v, s) %>% 
+  filter(party != "Informal")
+
+pb19 <- pb19 %>% 
+  select(PollingPlaceID, Latitude, Longitude) %>% 
+  rename(pp_id = PollingPlaceID,
+         lat = Latitude,
+         lon = Longitude)
+
+em_pp <- left_join(em_pp, pb19, by = "pp_id")
+
+
+# TRANSFORM ---- 
+
+em_pp <- em_pp %>% 
+  group_by(pp) %>% 
+  mutate(p = v / sum(v) * 100)
+
+nat_pp <- em_pp %>% 
+  filter(party == "NP")
+
+nat_pp$popup_label <- paste0("<b>", nat_pp$pp, "</b>", "<br/>", "NAT Primary: ", round(nat_pp$p, 1), "%", "<br/>", "Primary Swing: ", round(nat_pp$s, 1), "%")
+
+asp_pp <- em_pp %>% 
+  filter(party == "ASP")
+
+asp_pp$popup_label <- paste0("<b>", asp_pp$pp, "</b>", "<br/>", "SFF Primary: ", round(asp_pp$p, 1), "%", "<br/>", "Primary Swing: ", round(asp_pp$s, 1), "%")
+
+
+lib_pp <- em_pp %>% 
+  filter(party == "LP")
+
+lib_pp$popup_label <- paste0("<b>", lib_pp$pp, "</b>", "<br/>", "LIB Primary: ", round(lib_pp$p, 1), "%", "<br/>", "Primary Swing: ", round(lib_pp$s, 1), "%")
+
+alp_pp <- em_pp %>% 
+  filter(party == "ALP")
+
+alp_pp$popup_label <- paste0("<b>", alp_pp$pp, "</b>", "<br/>", "ALP Primary: ", round(alp_pp$p, 1), "%", "<br/>", "Primary Swing: ", round(alp_pp$s, 1), "%")
+
+
+pp_nat <- em_pp %>% 
+  filter(party == "NP") %>% 
+  select(pp, party, party_nm, p, s) %>% 
+  arrange(-p)
+
+quean <- c("Queanbeyan West", "Queanbeyan Heights", "Queanbeyan North", "Queanbeyan PPVC", "Queanbeyan Central", "Queanbeyan", "Queanbeyan South", "Queanbeyan East", "Jerrabomberra", "Googong")
+
+pp_nat_q_s <- pp_nat %>% 
+  filter(pp %in% quean) %>% 
+  ungroup() %>% 
+  summarise(mean_s = mean(s))
+
+pp_nat_notq_s <- pp_nat %>% 
+  filter(!(pp %in% quean)) %>% 
+  ungroup() %>% 
+  summarise(mean_s = mean(s))
+
+
+
+pp_asp <- em_pp %>% 
+  filter(party == "ASP") %>% 
+  select(pp, party, party_nm, p, s) %>% 
+  arrange(-p)
+
+temp <- pp_asp %>% 
+  select(pp, p)
+
+pp_nat_asp <- left_join(pp_nat, temp, by = "pp")
+
+tab <- pp_nat_asp %>% 
+  rename(nat = p.x, 
+         asp = p.y) %>% 
+  arrange(s)
+
+
+# write_csv(pp_nat, "data/pp_nat.csv")
+
+# write_csv(pp_asp, "data/pp_asp.csv")
+
+# write_csv(tab, "data/pp_asp_nat.csv")
+
+# write_csv(em_pp, "data/em_pp.csv")
+
+
+
+
+# CHARTS ---- 
+
+tab %>% 
+  ggplot(aes(x = s, y = asp)) + 
+  geom_point(color = "dark green") +
+  labs(title = "Relationship between Swing away from Nats and Shooters vote", subtitle = "", caption = "", x ="Swing against the Nats", y = "Shooters primary") +
+  stat_smooth(method = lm)
+  
+model <- lm(s ~ asp, data = tab)
+
+
+
+# MAPS ---- 
+
+em_map <- fed_elec[fed_elec$Elect_div %in% "Eden-monaro", ]
+
+pal_em <- colorBin(c("#ff1414", "#ff4e4e", "#ff8989", "#ffc4c4" ,"#adebad" ,  "#5cd65c" , "#29a329", "#1f7a1f"), domain = nat_pp$s, bins = c(-20, -15, -10, -5, 0, 5, 10, 15, 25))
+
+# nats
+
+pal_nat <- colorBin(c("#d6f5d6", "#adebad", "#5cd65c", "#33cc33", "#29a329", "#1f7a1f"), domain = nat_pp$p, bins = c(0, 5, 10, 15, 20, 25, 30))
+
+m_nat_s <- leaflet(data = nat_pp) %>% 
+  addProviderTiles(providers$CartoDB) %>% 
+  addCircleMarkers(data = nat_pp %>% filter(s >= 0 & !is.na(lat)), fillOpacity = 1, color = ~pal_em(s), radius = 5, stroke = FALSE, popup = ~popup_label, group = "Positive") %>% 
+  addCircleMarkers(data = nat_pp %>% filter(s < 0 & !is.na(lat)), fillOpacity = 1, color = ~pal_em(s), radius = 5, stroke = FALSE, popup = ~popup_label, group = "Negative") %>% 
+  addPolygons(data = em_map, color = "#696969", weight = 0.5, opacity = 1, fill = FALSE, label = em_map$Elect_div, highlight = highlightOptions(weight = 2, color = "black", bringToFront = TRUE)) %>% 
+  addLegend(title = "Primary swing to NAT (%)", pal = pal_em, values = c(-30, 30), position = "bottomright") %>% 
+  addLayersControl(overlayGroups = c("Positive", "Negative"))
+
+m_nat <- leaflet(data = nat_pp) %>% 
+  addProviderTiles(providers$CartoDB) %>% 
+  addCircleMarkers(data = nat_pp %>% filter(!is.na(lat)), fillOpacity = 1, color = ~pal_nat(p), radius = 5, stroke = FALSE, popup = ~popup_label) %>% 
+  addPolygons(data = em_map, color = "#696969", weight = 0.5, opacity = 1, fill = FALSE, label = em_map$Elect_div, highlight = highlightOptions(weight = 2, color = "black", bringToFront = TRUE)) %>% 
+  addLegend(title = "Nats primary (%)", pal = pal_nat, values = c(0, 30), position = "bottomright") 
+
+# saveWidget(m_nat_s, file=paste0(d,"maps/m_nats_s.html"))
+
+# saveWidget(m_nat, file=paste0(d,"maps/m_nat.html"))
+
+# shooters
+
+pal_asp <- colorBin(c("#ffebcc", "#ffc266", "#ff9900", "#995c00"), domain = asp_pp$p, bins = c(0, 5, 10, 15, 25))
+
+m_asp <- leaflet(data = asp_pp) %>% 
+  addProviderTiles(providers$CartoDB) %>% 
+  addCircleMarkers(data = asp_pp %>% filter(!is.na(lat)), fillOpacity = 1, color = ~pal_asp(p), radius = 5, stroke = FALSE, popup = ~popup_label) %>% 
+  addPolygons(data = em_map, color = "#696969", weight = 0.5, opacity = 1, fill = FALSE, label = em_map$Elect_div, highlight = highlightOptions(weight = 2, color = "black", bringToFront = TRUE)) %>% 
+  addLegend(title = "Shooters primary (%)", pal = pal_asp, values = c(0, 25), position = "bottomright") 
+
+# saveWidget(m_asp, file=paste0(d,"maps/m_asp.html"))
+
+# liberals
+
+pal_lib_s <- colorBin(c("#ff1414", "#ff4e4e", "#ff8989", "#ffc4c4" ,"#9999ff", "#ccccff", "#0000ff", "#0000b3"), domain = lib_pp$s, bins = c(-20, -15, -10, -5, 0, 5, 10, 15, 20))
+
+pal_lib <- colorBin(c("#9999ff", "#b6b6fa", "#9999ff", "#ccccff", "#0000ff", "#0000b3"), domain = lib_pp$p, bins = c(0, 10, 20, 30, 40, 50, 60))
+
+m_lib_s <- leaflet(data = lib_pp) %>% 
+  addProviderTiles(providers$CartoDB) %>% 
+  addCircleMarkers(data = lib_pp %>% filter(s >= 0 & !is.na(lat)), fillOpacity = 1, color = ~pal_lib_s(s), radius = 5, stroke = FALSE, popup = ~popup_label, group = "Positive") %>% 
+  addCircleMarkers(data = lib_pp %>% filter(s < 0 & !is.na(lat)), fillOpacity = 1, color = ~pal_lib_s(s), radius = 5, stroke = FALSE, popup = ~popup_label, group = "Negative") %>% 
+  addPolygons(data = em_map, color = "#696969", weight = 0.5, opacity = 1, fill = FALSE, label = em_map$Elect_div, highlight = highlightOptions(weight = 2, color = "black", bringToFront = TRUE)) %>% 
+  addLegend(title = "Primary swing to Libs (%)", pal = pal_lib_s, values = c(-20, 20), position = "bottomright") %>% 
+  addLayersControl(overlayGroups = c("Positive", "Negative"))
+
+m_lib <- leaflet(data = lib_pp) %>% 
+  addProviderTiles(providers$CartoDB) %>% 
+  addCircleMarkers(data = lib_pp %>% filter(!is.na(lat)), fillOpacity = 1, color = ~pal_lib(p), radius = 5, stroke = FALSE, popup = ~popup_label) %>% 
+  addPolygons(data = em_map, color = "#696969", weight = 0.5, opacity = 1, fill = FALSE, label = em_map$Elect_div, highlight = highlightOptions(weight = 2, color = "black", bringToFront = TRUE)) %>% 
+  addLegend(title = "Lib primary (%)", pal = pal_lib, values = c(0, 60), position = "bottomright") 
+
+# saveWidget(m_lib_s, file=paste0(d,"maps/m_libs_s.html"))
+ 
+ # saveWidget(m_lib, file=paste0(d,"maps/m_lib.html"))
+
+# labor
+
+pal_alp_s <- colorBin(c("#0000b3", "#0000ff", "#ccccff", "#9999ff", "#ffc4c4", "#ff8989", "#ff4e4e", "#ff1414"), domain = alp_pp$s, bins = c(-25, -15, -10, -5, 0, 5, 10, 15, 25))
+
+pal_alp <- colorBin(c("#ffdede", "#ffc4c4", "#ffa8a8", "#ff8989", "#ff4e4e", "#ff1414"), domain = alp_pp$p, bins = c(0, 10, 20, 30, 40, 50, 60))
+
+m_alp_s <- leaflet(data = alp_pp) %>% 
+  addProviderTiles(providers$CartoDB) %>% 
+  addCircleMarkers(data = alp_pp %>% filter(s >= 0 & !is.na(lat)), fillOpacity = 1, color = ~pal_alp_s(s), radius = 5, stroke = FALSE, popup = ~popup_label, group = "Positive") %>% 
+  addCircleMarkers(data = alp_pp %>% filter(s < 0 & !is.na(lat)), fillOpacity = 1, color = ~pal_alp_s(s), radius = 5, stroke = FALSE, popup = ~popup_label, group = "Negative") %>% 
+  addPolygons(data = em_map, color = "#696969", weight = 0.5, opacity = 1, fill = FALSE, label = em_map$Elect_div, highlight = highlightOptions(weight = 2, color = "black", bringToFront = TRUE)) %>% 
+  addLegend(title = "Primary swing to Labor (%)", pal = pal_alp_s, values = c(-25, 25), position = "bottomright") %>% 
+  addLayersControl(overlayGroups = c("Positive", "Negative"))
+
+m_alp <- leaflet(data = alp_pp) %>% 
+  addProviderTiles(providers$CartoDB) %>% 
+  addCircleMarkers(data = alp_pp %>% filter(!is.na(lat)), fillOpacity = 1, color = ~pal_alp(p), radius = 5, stroke = FALSE, popup = ~popup_label) %>% 
+  addPolygons(data = em_map, color = "#696969", weight = 0.5, opacity = 1, fill = FALSE, label = em_map$Elect_div, highlight = highlightOptions(weight = 2, color = "black", bringToFront = TRUE)) %>% 
+addLegend(title = "Labor primary (%)", pal = pal_alp, values = c(0, 60), position = "bottomright") 
+
+# saveWidget(m_alp_s, file=paste0(d,"maps/m_alps_s.html"))
+
+ # saveWidget(m_alp, file=paste0(d,"maps/m_alp.html"))
+
+
+# WASTE ----
+
+
+# qld <- xmlParse(paste0(d, 'qld2015.xml'))
+# 
+# district <- xpathSApply(qld, "//districts/district", xmlGetAttr, 'name')
+# 
+# em <- xmlParse(paste0(d, 'data/aec-mediafeed-results-detailed-lightprogress-25820.xml')) 
+# 
+# getNodeSet(em, "//Candidate")[3]
+# 
+# emr <- xmlRoot(em)
+# 
+# emr[[5]]
+# 
+# xmlSApply(emr[[5]][[2]][[2]][[1]][[1]][[3]][[1]], xmlName)
+# 
+# eml <- xmlToList(em)
+# 
+# em[[number("//Candidate/Votes")]]
+# 
+# first_prefs <- as.list(eml[["Results"]][["Election"]][["House"]][["Contests"]][["Contest"]][["FirstPreferences"]])
+# 
+# 
+# as.list(candidate
+# 
+# xmlToDataFrame(nodes = getNodeSet(emr, "//MediFeed/Results/Election/House/Contests/Contest/FirstPreferences/Candidate"))[c("Votes")]
+# 
+# 
+# t1 <- xpathSApply(em, "//MediFeed/Results/Election/House/Contests/Contest/FirstPreferences/Candidate/eml:AffiliationIdentifier", xmlGetAttr, 'ShortCode')
+# 
+# 
+# x1 <- xmlParse(paste0(d, 'data/aec-mediafeed-results-standard-light-25820.xml'))
+# 
+# 
+# 
+# x2 <- xmlRoot(x1)
+# 
+# t <- xpathSApply(x1, "//MediaFeed", xmlGetAttr, 'Id')
+# 
+# xmlToDataFrame(nodes = getNodeSet(x2, "//Enrolment"))
+# 
+# 
+# x2[[5]][[2]][[2]][[1]][[1]][[2]]
+# 
+# xmlToDataFrame(nodes = getNodeSet(x2, "//Election/House/Contests/Contest/PollingPlaces/PollingPlace/FirstPreferences/"))
+# 
+# 
+# xmlSApply(x2[[5]][[2]][[2]][[1]][[1]][[2]], xmlName)
+# 
+# xmlSApply(x2[[5]][[2]][[2]][[1]][[1]], xmlAttrs)
+# 
+# xmlSApply(x2[[5]], xmlSize)
+# 
+# 
+# 
+# xt <- read_xml(paste0(d, 'data/aec-mediafeed-results-detailed-verbose-25820.xml'))
+# 
+# xml_find_all(xml_children(xt)[5], "Candidate")
+# 
+# xml_find_all(xml_children(xml_children(xt)[5])[2], "Historic")
+# 
+# 
+# 
+# xml_children(xml_children(xt)[5])[2]
+# 
+# 
+# 
+# 
+# 
+# 
+# xmlSApply(xt, xmlGetAttr, "Votes")
+# 
+# 
+# l1 <- xmlToList(x1)
+# 
+# rootnode <- xmlRoot(x1)
+# 
+# rootsize <- xmlSize(rootnode)
+# 
+# x2 <- rootnode[[5]][[2]][[3]]
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# xm <- read_xml(paste0(d, 'data/test.xml'))
+# 
+# xml_structure(xm)
+# 
+# votes <- xm %>% xml_find_all("./Votes")
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# getNodeSet(xm, "//Results/Election/House/Contests/Contest/PollingPlaces/PollingPlace/Candidate/Votes")
+# 
+# 
+# 
+# xf <- xmlTreeParse(paste0(d, 'data/aec-mediafeed-results-detailed-verbose-25820.xml'), useInternalNodes = TRUE)
+# 
+# xt <- xmlRoot(xf)
+# 
+# 
+# 
+# d <- xmlToDataFrame(nodes = getNodeSet(rootnode[5],"//Votes"))
+# 
+# d1 <- xmlToDataFrame(nodes = getNodeSet(x1, "//*/Votes"), stringsAsFactors = FALSE)
+# 
+# xpathSApply(xf, "//Results/Election/House/Contests/Contest/FirstPreferences/Candidate/Votes")
+# 
+# getNodeSet(x1, "//MediaFeed/Results/Election/House/Contests/Contest/PollingPlaces/PollingPlace/PollingPlaceIdentifier/FirstPreferences/Candidate/Votes")
+# 
+# str <- xml_structure(x = read_xml("C:/Users/matt/Dropbox/2a. Election/data/eden-monaro/data/aec-mediafeed-results-detailed-verbose-25820.xml"))
+# 
+# c1 <- xmlToDataFrame(nodes=getNodeSet(xf,"//House/contests"))
+# 
+# 
+# 
+# emx <- read_xml("data/aec-mediafeed-results-detailed-lightprogress-25820.xml")
+# 
+# xml_name(emx)
+# 
+# emc <- xml_children(emx)[5]
+# 
+# cand <- emc %>% xml_find_all("/Results/Election/House/Contests/Contest/PollingPlaces/PollingPlace/FirstPreferences/Candidate")
+# 
+# cand %>% xml_attr("eml:CandidateIdentifier/Id")
+# 
+# 
+# v <- emx %>% xml_find_all("//PollingPlaces/PollingPlace/FirstPreferences/Candidate/Votes")
+# 
+# v %>% xml_attr("Percentage") 
+# 
+# 
+# 
+# 
+# 
+# emx <- read_xml("data/test.xml")
+# 
+# xml_structure(emx)
+# 
+# cand <- emx %>% xml_find_all("//PollingPlaces/PollingPlace/FirstPreferences/Candidate")
+# 
+# cand %>% xml_attr("eml:CandidateIdentifier/Id")
+# 
+# 
+# v <- emx %>% xml_find_all("//PollingPlaces/PollingPlace/FirstPreferences/Candidate/Votes")
+# 
+# v %>% xml_attr("Percentage") 
+# 
+# v %>% xml_text("//Votes") 
+# 
+# 
+# point %>% xml_attr("latitude") %>% as.numeric()
+# 
+# 
+# 
+# emx[[5]]
