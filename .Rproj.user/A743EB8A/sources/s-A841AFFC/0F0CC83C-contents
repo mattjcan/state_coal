@@ -1,0 +1,137 @@
+---
+title: "Family Budget analysis"
+author: ""
+date: "June 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, dpi = 300, fig.height = 3.5)
+
+library(knitr)
+
+source("budget_out.R")
+
+```
+
+## Year to date analysis
+
+```{r }
+p_bal
+
+```
+
+___
+
+```{r }
+p_year
+
+```
+
+___
+
+# Spending in `r month(c_month, label = T, abbr = F)` 
+
+```{r}
+p_b_mon
+```
+
+___
+
+# Progress against monthly budget 
+
+```{r fig.height = 4.5}
+grid.arrange(p_progress$groceries, p_progress$misc, p_progress$dining, p_progress$hif, ncol = 2)
+```
+
+___
+
+## Analysis of individual categories
+
+```{r}
+p_g_tot
+```
+
+___
+
+```{r}
+p_m_tot
+```
+
+___
+
+```{r}
+p_d_tot
+```
+
+___
+
+```{r}
+p_h_tot
+```
+
+___
+
+```{r}
+p_ext_tot
+```
+___
+
+# Detailed statistics
+
+## Spending year to date
+
+```{r}
+t_budget_h
+```
+
+___
+
+## Spending in `r month(c_month, label = T, abbr = F)` 
+
+```{r}
+t_budget_m_h
+```
+___
+
+## Spending by Category in `r month(c_month, label = T, abbr = F)` 
+
+```{r}
+t_tab$groceries
+t_tab$misc
+t_tab$clothing
+t_tab$sports
+t_tab$travel
+t_tab$insurance
+t_tab$dining
+t_tab$hif
+t_tab$yepp_house
+t_tab$gifts
+t_tab$fuel
+t_tab$digital
+t_tab$health
+t_tab$hair
+t_tab$kids
+t_tab$bank_charges
+t_tab$new_ext
+```
+___
+
+## Net worth
+
+```{r}
+p_nw
+```
+
+___
+
+## Senate
+
+```{r}
+p_sen_tot
+
+t_tab$senate
+```
+
+

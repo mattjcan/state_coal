@@ -1,4 +1,3 @@
-# PREAMBLE ---------------------------------------------------------------
 
 library(tidyverse)
 library(knitr)
@@ -241,6 +240,8 @@ q_tpp_w_t <- left_join(q_tpp_w_t, min_t, by = "div")
 
 names(q_tpp_w_t) <- c("Electorate", "Party", "Margin (%)", "Coal Mining (%)", "Mining (%)")
 
+q_tpp_w_t[q_tpp_w_t$Electorate == "Whitsunday", ]$Party <- "IND"
+
 t_pend <- q_tpp_w_t %>% 
   kable("html", escape = F, booktabs = T) %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
@@ -270,9 +271,9 @@ t_target <- q_target %>%
 
 # maps
 
-list_tier1 <- c("THURINGOWA", "BURDEKIN", "WHITSUNDAY", "MIRANI", "KEPPEL", "TOOWOOMBA NORTH")
+list_tier1 <- c("THURINGOWA", "BURDEKIN", "WHITSUNDAY", "MIRANI", "KEPPEL")
 
-list_tier2 <- c("MUNDINGBURRA", "MACKAY", "ROCKHAMPTON", "MARYBOROUGH", "MANSFIELD", "BULIMBA", "IPSWICH WEST")
+list_tier2 <- c("MUNDINGBURRA", "MACKAY", "ROCKHAMPTON", "TOWNSVILLE", "MARYBOROUGH", "TOOWOOMBA NORTH")
 
 list_tier <- c(list_tier1, list_tier2)
 
@@ -317,41 +318,41 @@ m_sa2_coal <- leaflet(data = sa2_map_coal) %>%
 # saveWidget(m_sa2_coal, file=paste0(d,"maps/m_sa2_coal.html"))
 
 # sa1 maps
+# 
+# sa1_map_qld <- sa1_map_org[sa1_map_org$STE_NAME16 %in% "Queensland", ]
+# 
+# qld_sa1_join <- gContains(qld_elec, sa1_map_qld, byid = T)
+# 
+# sa1_s_nat_seat <- sa1_s %>% 
+#   filter(div_nm %in% "Capricornia")
+# 
+# sa1_map_s <- sp::merge(sa1_map_org, sa1_s_nat_seat, by = "SA1_7DIG16", all=F, duplicateGeoms = T)
+# 
+# nats_map_seat <- fed_elec[fed_elec@data$Elect_div == x, ]
+# 
+# # sa1_map_s_wc <- raster::intersect(sa1_map_s, wc_map)
+# 
+# labels_s_nats <- sprintf(
+#   "<strong>%s</strong><br/>LNP Swing: %g %%",
+#   sa1_map_s$SA1_7DIG16, round(sa1_map_s$swing,1)) %>% lapply(htmltools::HTML)
+# 
+# 
+# m1 <- leaflet(data = sa1_map_s) %>% 
+#   addProviderTiles("CartoDB") %>%  
+#   addPolygons(fillColor = ~pal_t_s_nats(swing), fillOpacity = 0.5, weight = 0.5, color = "black", smoothFactor = 0, highlight = highlightOptions(
+#     weight = 3,
+#     color = "white",
+#     fillOpacity = 1,
+#     bringToFront = TRUE),
+#     label = labels_s_nats,
+#     labelOptions = labelOptions(
+#       style = list("font-weight" = "normal", padding = "3px 8px"),
+#       textsize = "12px",
+#       direction = "auto")) %>% 
+#   addLegend(title = "TPP Swing to LNP (%)", pal = pal_t_s_nats, values = c(-20, 20), position = "bottomright") %>% 
+#   addPolygons(data = nats_map_seat, color = "#696969", weight = 1, opacity = 1, fill = FALSE, label = x, highlight = highlightOptions(weight = 1, color = "black", bringToFront = TRUE))
 
-sa1_map_qld <- sa1_map_org[sa1_map_org$STE_NAME16 %in% "Queensland", ]
-
-qld_sa1_join <- gContains(qld_elec, sa1_map_qld, byid = T)
-
-sa1_s_nat_seat <- sa1_s %>% 
-  filter(div_nm %in% )
-
-sa1_map_s <- sp::merge(sa1_map_org, sa1_s_nat_seat, by = "SA1_7DIG16", all=F, duplicateGeoms = T)
-
-nats_map_seat <- fed_elec[fed_elec@data$Elect_div == x, ]
-
-# sa1_map_s_wc <- raster::intersect(sa1_map_s, wc_map)
-
-labels_s_nats <- sprintf(
-  "<strong>%s</strong><br/>LNP Swing: %g %%",
-  sa1_map_s$SA1_7DIG16, round(sa1_map_s$swing,1)) %>% lapply(htmltools::HTML)
-
-
-m1 <- leaflet(data = sa1_map_s) %>% 
-  addProviderTiles("CartoDB") %>%  
-  addPolygons(fillColor = ~pal_t_s_nats(swing), fillOpacity = 0.5, weight = 0.5, color = "black", smoothFactor = 0, highlight = highlightOptions(
-    weight = 3,
-    color = "white",
-    fillOpacity = 1,
-    bringToFront = TRUE),
-    label = labels_s_nats,
-    labelOptions = labelOptions(
-      style = list("font-weight" = "normal", padding = "3px 8px"),
-      textsize = "12px",
-      direction = "auto")) %>% 
-  addLegend(title = "TPP Swing to LNP (%)", pal = pal_t_s_nats, values = c(-20, 20), position = "bottomright") %>% 
-  addPolygons(data = nats_map_seat, color = "#696969", weight = 1, opacity = 1, fill = FALSE, label = x, highlight = highlightOptions(weight = 1, color = "black", bringToFront = TRUE))
-
-saveWidget(m1, file=paste0("C:/Users/matt/Documents/R/sa_map/nats/m_sa1_", x, ".html"), selfcontained = T)
+# saveWidget(m1, file=paste0("C:/Users/matt/Documents/R/sa_map/nats/m_sa1_", x, ".html"), selfcontained = T)
 
 
 

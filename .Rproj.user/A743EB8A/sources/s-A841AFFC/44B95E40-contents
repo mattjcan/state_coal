@@ -1,0 +1,398 @@
+# Burdekin
+
+url <- "https://results.ecq.qld.gov.au/elections/state/State2017/Burdekin/districtProfile.html"
+
+pb_burd <- url %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@id="ContentPanel"]/span[4]/table') %>%
+  html_table(fill = TRUE)
+
+pb_burd <- pb_burd[[1]]
+
+pb_burd <- pb_burd[1,]
+
+pb_burd <- pb_burd[, 5:length(colnames(pb_burd))]
+
+pb_burd <- as.character(pb_burd)
+
+pb_burd <- as.factor(pb_burd)
+
+pb_burd <- levels(pb_burd)
+
+pb_burd1 <- gsub("\\(.*", "", pb_burd)
+
+pb_burd1 <- gsub("\\,.*", "", pb_burd1)
+
+pb_burd1 <- trimws(pb_burd1, which = c("both", "left", "right"))
+
+pb_burd2 <- gsub(".*\\)", "", pb_burd)
+
+pb_burd2 <- sub("\\,", "", pb_burd2)
+
+pb_burd2 <- trimws(pb_burd2, which = c("both", "left", "right"))
+
+pb_burd <- as.data.frame(cbind(pp = pb_burd1, address = pb_burd2))
+
+pb_burd <- pb_burd[pb_burd$address != "", ]
+
+pb_burd <- pb_burd[pb_burd$address != "NA", ]
+
+pb_burd$div <- "Burdekin"
+
+pb_burd <- pb_burd[!grepl("Wheelchair", pb_burd$pp), ]
+
+hold <- pb_burd[pb_burd$pp  %in% c("Townsville All-Districts Centre", "Mackay All-Districts Centre"), ]
+
+pb_burd <- pb_burd[!grepl("All-Districts", pb_burd$pp), ]
+
+pb_burd <- rbind(pb_burd, hold)
+
+# Thuringowa
+
+url <- "https://results.ecq.qld.gov.au/elections/state/State2017/Thuringowa/districtProfile.html"
+
+pb_thu <- url %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@id="ContentPanel"]/span[4]/table') %>%
+  html_table(fill = TRUE)
+
+pb_thu <- pb_thu[[1]]
+
+pb_thu <- pb_thu[1,]
+
+pb_thu <- pb_thu[, 5:length(colnames(pb_thu))]
+
+pb_thu <- as.character(pb_thu)
+
+pb_thu <- as.factor(pb_thu)
+
+pb_thu <- levels(pb_thu)
+
+pb_thu1 <- gsub("\\(.*", "", pb_thu)
+
+pb_thu1 <- gsub("\\,.*", "", pb_thu1)
+
+pb_thu1 <- trimws(pb_thu1, which = c("both", "left", "right"))
+
+pb_thu2 <- gsub(".*\\)", "", pb_thu)
+
+pb_thu2 <- sub("\\,", "", pb_thu2)
+
+pb_thu2 <- trimws(pb_thu2, which = c("both", "left", "right"))
+
+pb_thu <- as.data.frame(cbind(pp = pb_thu1, address = pb_thu2))
+
+pb_thu <- pb_thu[pb_thu$address != "", ]
+
+pb_thu <- pb_thu[pb_thu$address != "NA", ]
+
+pb_thu$div <- "Thuringowa"
+
+pb_thu <- pb_thu[!grepl("Wheelchair", pb_thu$pp), ]
+
+hold <- pb_thu[pb_thu$pp  == "Townsville All-Districts Centre", ]
+
+pb_thu <- pb_thu[!grepl("All-Districts", pb_thu$pp), ]
+
+pb_thu <- rbind(pb_thu, hold)
+
+# Townsville
+
+
+url <- "https://results.ecq.qld.gov.au/elections/state/State2017/townsville/districtProfile.html"
+
+pb_town <- url %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@id="ContentPanel"]/span[4]/table') %>%
+  html_table(fill = TRUE)
+
+pb_town <- pb_town[[1]]
+
+pb_town <- pb_town[1,]
+
+pb_town <- pb_town[, 5:length(colnames(pb_town))]
+
+pb_town <- as.character(pb_town)
+
+pb_town <- as.factor(pb_town)
+
+pb_town <- levels(pb_town)
+
+pb_town1 <- gsub("\\(.*", "", pb_town)
+
+pb_town1 <- gsub("\\,.*", "", pb_town1)
+
+pb_town1 <- trimws(pb_town1, which = c("both", "left", "right"))
+
+pb_town2 <- gsub(".*\\)", "", pb_town)
+
+pb_town2 <- sub("\\,", "", pb_town2)
+
+pb_town2 <- trimws(pb_town2, which = c("both", "left", "right"))
+
+pb_town <- as.data.frame(cbind(pp = pb_town1, address = pb_town2))
+
+pb_town <- pb_town[pb_town$address != "", ]
+
+pb_town <- pb_town[pb_town$address != "NA", ]
+
+pb_town$div <- "Townsville"
+
+pb_town <- pb_town[!grepl("Wheelchair", pb_town$pp), ]
+
+hold <- pb_town[pb_town$pp  == "Townsville All-Districts Centre", ]
+
+pb_town <- pb_town[!grepl("All-Districts", pb_town$pp), ]
+
+pb_town <- rbind(pb_town, hold)
+
+# Mackay 
+
+
+url <- "https://results.ecq.qld.gov.au/elections/state/State2017/mackay/districtProfile.html"
+
+pb_mack <- url %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@id="ContentPanel"]/span[4]/table') %>%
+  html_table(fill = TRUE)
+
+pb_mack <- pb_mack[[1]]
+
+pb_mack <- pb_mack[1,]
+
+pb_mack <- pb_mack[, 5:length(colnames(pb_mack))]
+
+pb_mack <- as.character(pb_mack)
+
+pb_mack <- as.factor(pb_mack)
+
+pb_mack <- levels(pb_mack)
+
+pb_mack1 <- gsub("\\(.*", "", pb_mack)
+
+pb_mack1 <- gsub("\\,.*", "", pb_mack1)
+
+pb_mack1 <- trimws(pb_mack1, which = c("both", "left", "right"))
+
+pb_mack2 <- gsub(".*\\)", "", pb_mack)
+
+pb_mack2 <- sub("\\,", "", pb_mack2)
+
+pb_mack2 <- trimws(pb_mack2, which = c("both", "left", "right"))
+
+pb_mack <- as.data.frame(cbind(pp = pb_mack1, address = pb_mack2))
+
+pb_mack <- pb_mack[pb_mack$address != "", ]
+
+pb_mack <- pb_mack[pb_mack$address != "NA", ]
+
+pb_mack$div <- "Mackay"
+
+pb_mack <- pb_mack[!grepl("Wheelchair", pb_mack$pp), ]
+
+hold <- pb_mack[pb_mack$pp  %in% c("Mackay All-Districts Centre",) ]
+
+pb_mack <- pb_mack[!grepl("All-Districts", pb_mack$pp), ]
+
+pb_mack <- rbind(pb_mack, hold)
+
+# Mirani
+
+
+url <- "https://results.ecq.qld.gov.au/elections/state/State2017/Mirani/districtProfile.html"
+
+pb_mir <- url %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@id="ContentPanel"]/span[4]/table') %>%
+  html_table(fill = TRUE)
+
+pb_mir <- pb_mir[[1]]
+
+pb_mir <- pb_mir[1,]
+
+pb_mir <- pb_mir[, 5:length(colnames(pb_mir))]
+
+pb_mir <- as.character(pb_mir)
+
+pb_mir <- as.factor(pb_mir)
+
+pb_mir <- levels(pb_mir)
+
+pb_mir1 <- gsub("\\(.*", "", pb_mir)
+
+pb_mir1 <- gsub("\\,.*", "", pb_mir1)
+
+pb_mir1 <- trimws(pb_mir1, which = c("both", "left", "right"))
+
+pb_mir2 <- gsub(".*\\)", "", pb_mir)
+
+pb_mir2 <- sub("\\,", "", pb_mir2)
+
+pb_mir2 <- trimws(pb_mir2, which = c("both", "left", "right"))
+
+pb_mir <- as.data.frame(cbind(pp = pb_mir1, address = pb_mir2))
+
+pb_mir <- pb_mir[pb_mir$address != "", ]
+
+pb_mir <- pb_mir[pb_mir$address != "NA", ]
+
+pb_mir$div <- "Mirani"
+
+pb_mir <- pb_mir[!grepl("Wheelchair", pb_mir$pp), ]
+
+hold <- pb_mir[pb_mir$pp  %in% c("Mackay All-Districts Centre", "Rockhampton All-Districts Centre"), ]
+
+pb_mir <- pb_mir[!grepl("All-Districts", pb_mir$pp), ]
+
+pb_mir <- rbind(pb_mir, hold)
+
+# Whitsunday
+
+
+url <- "https://results.ecq.qld.gov.au/elections/state/State2017/whitsunday/districtProfile.html"
+
+pb_whit <- url %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@id="ContentPanel"]/span[4]/table') %>%
+  html_table(fill = TRUE)
+
+pb_whit <- pb_whit[[1]]
+
+pb_whit <- pb_whit[1,]
+
+pb_whit <- pb_whit[, 5:length(colnames(pb_whit))]
+
+pb_whit <- as.character(pb_whit)
+
+pb_whit <- as.factor(pb_whit)
+
+pb_whit <- levels(pb_whit)
+
+pb_whit1 <- gsub("\\(.*", "", pb_whit)
+
+pb_whit1 <- gsub("\\,.*", "", pb_whit1)
+
+pb_whit1 <- trimws(pb_whit1, which = c("both", "left", "right"))
+
+pb_whit2 <- gsub(".*\\)", "", pb_whit)
+
+pb_whit2 <- sub("\\,", "", pb_whit2)
+
+pb_whit2 <- trimws(pb_whit2, which = c("both", "left", "right"))
+
+pb_whit <- as.data.frame(cbind(pp = pb_whit1, address = pb_whit2))
+
+pb_whit <- pb_whit[pb_whit$address != "", ]
+
+pb_whit <- pb_whit[pb_whit$address != "NA", ]
+
+pb_whit$div <- "Whitsunday"
+
+pb_whit <- pb_whit[!grepl("Wheelchair", pb_whit$pp), ]
+
+hold <- pb_whit[pb_whit$pp  %in% c("Mackay All-Districts Centre"), ]
+
+pb_whit <- pb_whit[!grepl("All-Districts", pb_whit$pp), ]
+
+pb_whit <- rbind(pb_whit, hold)
+
+# Traeger
+
+
+url <- "https://results.ecq.qld.gov.au/elections/state/State2017/traeger/districtProfile.html"
+
+pb_tra <- url %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@id="ContentPanel"]/span[4]/table') %>%
+  html_table(fill = TRUE)
+
+pb_tra <- pb_tra[[1]]
+
+pb_tra <- pb_tra[1,]
+
+pb_tra <- pb_tra[, 5:length(colnames(pb_tra))]
+
+pb_tra <- as.character(pb_tra)
+
+pb_tra <- as.factor(pb_tra)
+
+pb_tra <- levels(pb_tra)
+
+pb_tra1 <- gsub("\\(.*", "", pb_tra)
+
+pb_tra1 <- gsub("\\,.*", "", pb_tra1)
+
+pb_tra1 <- trimws(pb_tra1, which = c("both", "left", "right"))
+
+pb_tra2 <- gsub(".*\\)", "", pb_tra)
+
+pb_tra2 <- sub("\\,", "", pb_tra2)
+
+pb_tra2 <- trimws(pb_tra2, which = c("both", "left", "right"))
+
+pb_tra <- as.data.frame(cbind(pp = pb_tra1, address = pb_tra2))
+
+pb_tra <- pb_tra[pb_tra$address != "", ]
+
+pb_tra <- pb_tra[pb_tra$address != "NA", ]
+
+pb_tra$div <- "Traeger"
+
+pb_tra <- pb_tra[!grepl("Wheelchair", pb_tra$pp), ]
+
+pb_tra <- pb_tra[!grepl("All-Districts", pb_tra$pp), ]
+
+# Mundingburra
+
+
+url <- "https://results.ecq.qld.gov.au/elections/state/State2017/mundingburra/districtProfile.html"
+
+pb_mun <- url %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@id="ContentPanel"]/span[4]/table') %>%
+  html_table(fill = TRUE)
+
+pb_mun <- pb_mun[[1]]
+
+pb_mun <- pb_mun[1,]
+
+pb_mun <- pb_mun[, 5:length(colnames(pb_mun))]
+
+pb_mun <- as.character(pb_mun)
+
+pb_mun <- as.factor(pb_mun)
+
+pb_mun <- levels(pb_mun)
+
+pb_mun1 <- gsub("\\(.*", "", pb_mun)
+
+pb_mun1 <- gsub("\\,.*", "", pb_mun1)
+
+pb_mun1 <- trimws(pb_mun1, which = c("both", "left", "right"))
+
+pb_mun2 <- gsub(".*\\)", "", pb_mun)
+
+pb_mun2 <- sub("\\,", "", pb_mun2)
+
+pb_mun2 <- trimws(pb_mun2, which = c("both", "left", "right"))
+
+pb_mun <- as.data.frame(cbind(pp = pb_mun1, address = pb_mun2))
+
+pb_mun <- pb_mun[pb_mun$address != "", ]
+
+pb_mun <- pb_mun[pb_mun$address != "NA", ]
+
+pb_mun$div <- "Mundingburra"
+
+pb_mun <- pb_mun[!grepl("Wheelchair", pb_mun$pp), ]
+
+hold <- pb_mun[pb_mun$pp  %in% c("Townsville All-Districts Centre"), ]
+
+pb_mun <- pb_mun[!grepl("All-Districts", pb_mun$pp), ]
+
+pb_mun <- rbind(pb_mun, hold)
+
+# Combined
+
+pb_daw <- rbind(pb_burd, pb_mack, pb_mir, pb_thu, pb_town, pb_tra, pb_whit)
+

@@ -1,0 +1,24 @@
+---
+title: ""
+author: ""
+date: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, dpi = 300, fig.height = 3.5)
+
+library(knitr)
+
+source("state_coal.R")
+
+```
+
+## Coal target seats
+
+```{r}
+t_target
+```
+
+
